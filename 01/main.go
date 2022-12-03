@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"sort"
@@ -11,7 +10,7 @@ import (
 )
 
 func readInput(fname string) string {
-	content, err := ioutil.ReadFile(fname)
+	content, err := os.ReadFile(fname)
 	if err != nil {
 		log.Fatal(err)
 	}

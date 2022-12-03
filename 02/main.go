@@ -14,7 +14,7 @@ func readInput(fname string) string {
 		log.Fatal(err)
 	}
 
-	// Convert []byte to string and print to screen
+	// Convert []byte to string
 	return string(content)
 }
 
@@ -66,7 +66,6 @@ func main() {
 	}
 	params := os.Args[1]
 	inputName := strings.Split(params, " ")[0]
-	fmt.Printf("inputName = %v\n", inputName)
 	text := readInput(inputName)
 	run(text)
 }

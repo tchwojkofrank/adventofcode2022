@@ -30,6 +30,12 @@ const (
 	win  = 6
 )
 
+func score(myThrow, opponentThrow int) int {
+	result := ((myThrow - opponentThrow + 4) % 3) * 3
+	fmt.Printf("myThrow=%d opponentThrow=%d result=%d\n", myThrow, opponentThrow, result)
+	return myThrow + result
+}
+
 var playMap = map[string]int{
 	"A": rock,
 	"B": paper,
@@ -89,7 +95,8 @@ func getPlays(playStrings []string) []Play {
 func getScores(plays []Play) int {
 	sum := 0
 	for _, play := range plays {
-		sum += scoreMap[play]
+		// sum += scoreMap[play]
+		sum += score(play.self, play.opponent)
 	}
 	return sum
 }

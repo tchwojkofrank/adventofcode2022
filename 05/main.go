@@ -90,8 +90,6 @@ func doInstruction(instruction string, stacks []Stack, moveCrate func([]Stack, i
 func doAllInstructions(instructions []string, stacks []Stack, moveCrate func([]Stack, int, int, int) []Stack) []Stack {
 	for _, i := range instructions {
 		stacks = doInstruction(i, stacks, moveCrate)
-		fmt.Println(i)
-		fmt.Println(stacks)
 	}
 	return stacks
 }
@@ -120,9 +118,7 @@ func run(input string) {
 	instructions = strings.Split(instructionsString, "\n")
 	crateStackStrings = reverseSlice(crateStackStrings)
 	stacks = initStacks(crateStackStrings)
-	fmt.Println(stacks)
 	stacks = doAllInstructions(instructions, stacks, moveCrate9001)
-	fmt.Println(stacks)
 	printTop(stacks)
 
 }

@@ -30,12 +30,12 @@ func main() {
 }
 
 func isUnique(t string) bool {
-	for i := 0; i < len(t); i++ {
-		for j := i + 1; j < len(t); j++ {
-			if t[i] == t[j] {
-				return false
-			}
+	chars := make(map[rune]struct{}, len(t))
+	for _, c := range t {
+		if _, ok := chars[c]; ok {
+			return false
 		}
+		chars[c] = struct{}{}
 	}
 	return true
 }

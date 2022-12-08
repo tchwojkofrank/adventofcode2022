@@ -36,7 +36,6 @@ type Node struct {
 	isDirectory bool
 	children    map[string]*Node
 	parent      *Node
-	dirSize     int
 }
 
 func cd(root *Node, cursor *Node, d string) (*Node, *Node) {
@@ -60,7 +59,6 @@ func ls(cursor *Node, output []string) *Node {
 			isDirectory: false,
 			children:    children,
 			parent:      cursor,
-			dirSize:     0,
 		}
 		if fields[0] == "dir" {
 			newNode.isDirectory = true
@@ -92,22 +90,22 @@ func processCommands(root *Node, commands []string) *Node {
 func calcSizes(cursor *Node) int {
 	sum := cursor.size
 	if cursor.isDirectory {
-		if cursor.dirSize == 0 {
+		if cursor.size == 0 {
 			for _, child := range cursor.children {
 				sum += calcSizes(child)
 			}
 		}
-		cursor.dirSize = sum
+		cursor.size = sum
 	}
 	return sum
 }
 
 func part1calc(cursor *Node) int {
 	sum := 0
-	if cursor.dirSize <= 100000 {
-		sum += cursor.dirSize
-	}
 	if cursor.isDirectory {
+		if cursor.size <= 100000 {
+			sum += cursor.size
+		}
 		for _, child := range cursor.children {
 			sum += part1calc(child)
 		}
@@ -121,9 +119,12 @@ const (
 )
 
 func findBest(cursor *Node, needToFree int, best *Node) *Node {
-	thisDirSize := cursor.dirSize
+	thisDirSize := 0
+	if cursor.isDirectory {
+		thisDirSize = cursor.size
+	}
 	nextBest := best
-	if thisDirSize >= needToFree && best.dirSize > thisDirSize {
+	if thisDirSize >= needToFree && best.size > thisDirSize {
 		nextBest = cursor
 	}
 	for _, child := range cursor.children {
@@ -142,7 +143,6 @@ func run(input string) {
 		true,
 		children,
 		nil,
-		0,
 	}
 
 	commands := strings.Split(input, "\n$")
@@ -151,10 +151,10 @@ func run(input string) {
 
 	calcSizes(root)
 	fmt.Printf("part 1 = %d\n", part1calc(root))
-	usedSpace := root.dirSize
+	usedSpace := root.size
 	freeSpace := totalSize - usedSpace
 	needToFree := needSize - freeSpace
 
 	bestToFree := findBest(root, needToFree, root)
-	fmt.Printf("part 2 best directory = %v size = %d\n", bestToFree.name, bestToFree.dirSize)
+	fmt.Printf("part 2 best directory = %v size = %d\n", bestToFree.name, bestToFree.size)
 }

@@ -43,10 +43,8 @@ func cd(root *Node, cursor *Node, d string) (*Node, *Node) {
 		return root, root
 	} else if d == ".." {
 		return root, cursor.parent
-	} else {
-		return root, cursor.children[d]
 	}
-	return root, cursor
+	return root, cursor.children[d]
 }
 
 func ls(cursor *Node, output []string) *Node {

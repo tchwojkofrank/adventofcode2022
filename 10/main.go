@@ -30,12 +30,15 @@ func main() {
 	run(text)
 }
 
+type CRT [6][40]byte
+
 type CPU struct {
 	register            int
 	cycle               int
 	totalSignalStrength int
 	addState            int
 	addValue            int
+	crt                 CRT
 }
 
 const (
@@ -43,6 +46,15 @@ const (
 	startAdd  = 1
 	finishAdd = 2
 )
+
+func (cpu *CPU) isSpriteVisible() byte {
+	spritePosition := cpu.register
+	currentLineIndex := (cpu.cycle - 1) % 40
+	if currentLineIndex >= spritePosition-1 && currentLineIndex <= spritePosition+1 {
+		return '#'
+	}
+	return '.'
+}
 
 func (cpu *CPU) start() {
 	fmt.Printf("Start : %v\n", *cpu)
@@ -66,6 +78,9 @@ func (cpu *CPU) during(command string, param int) {
 			cpu.addState = finishAdd
 		}
 	}
+	crtLine := (cpu.cycle - 1) / 40
+	crtOffset := (cpu.cycle - 1) % 40
+	cpu.crt[crtLine][crtOffset] = cpu.isSpriteVisible()
 	fmt.Printf("During: %v\n", *cpu)
 }
 
@@ -101,6 +116,26 @@ func (cpu *CPU) step(instruction []string) {
 	}
 }
 
+func (cpu CPU) String() string {
+	/*
+		register            int
+		cycle               int
+		totalSignalStrength int
+		addState            int
+		addValue            int
+	*/
+	result := fmt.Sprintf("cycle: %d\nregister: %d\n\n", cpu.cycle, cpu.register)
+	return result
+}
+
+func (crt CRT) String() string {
+	result := ""
+	for i := 0; i < 6; i++ {
+		result = result + string(crt[i][:]) + "\n"
+	}
+	return result
+}
+
 func run(input string) {
 	instructions := strings.Split(input, "\n")
 	cpu := CPU{
@@ -109,5 +144,7 @@ func run(input string) {
 	for _, instruction := range instructions {
 		cpu.step(strings.Split(instruction, " "))
 	}
-	fmt.Printf("\n\nTotal signal strength = %d\n", cpu.totalSignalStrength)
+	fmt.Printf("\n\nTotal signal strength = %d\n\n", cpu.totalSignalStrength)
+
+	fmt.Printf("%v", cpu.crt)
 }

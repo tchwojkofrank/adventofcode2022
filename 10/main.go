@@ -57,7 +57,6 @@ func (cpu *CPU) isSpriteVisible() byte {
 }
 
 func (cpu *CPU) start() {
-	fmt.Printf("Start : %v\n", *cpu)
 	cpu.cycle++
 }
 
@@ -81,7 +80,6 @@ func (cpu *CPU) during(command string, param int) {
 	crtLine := (cpu.cycle - 1) / 40
 	crtOffset := (cpu.cycle - 1) % 40
 	cpu.crt[crtLine][crtOffset] = cpu.isSpriteVisible()
-	fmt.Printf("During: %v\n", *cpu)
 }
 
 func (cpu *CPU) end(command string, param int) {
@@ -97,7 +95,6 @@ func (cpu *CPU) end(command string, param int) {
 			cpu.addValue = 0
 		}
 	}
-	fmt.Printf("End   : %v\n\n", *cpu)
 }
 
 func (cpu *CPU) step(instruction []string) {
@@ -117,13 +114,6 @@ func (cpu *CPU) step(instruction []string) {
 }
 
 func (cpu CPU) String() string {
-	/*
-		register            int
-		cycle               int
-		totalSignalStrength int
-		addState            int
-		addValue            int
-	*/
 	result := fmt.Sprintf("cycle: %d\nregister: %d\n\n", cpu.cycle, cpu.register)
 	return result
 }

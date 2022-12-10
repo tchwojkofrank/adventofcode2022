@@ -6,6 +6,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	cursor "chwojkofrank.com/cursor"
 )
 
 func readInput(fname string) string {
@@ -80,6 +83,10 @@ func (cpu *CPU) during(command string, param int) {
 	crtLine := (cpu.cycle - 1) / 40
 	crtOffset := (cpu.cycle - 1) % 40
 	cpu.crt[crtLine][crtOffset] = cpu.isSpriteVisible()
+	cursor.Clear()
+	cursor.Position(0, 0)
+	fmt.Printf("%v\n", cpu.crt)
+	time.Sleep(10 * time.Millisecond)
 }
 
 func (cpu *CPU) end(command string, param int) {

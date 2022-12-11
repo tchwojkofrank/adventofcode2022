@@ -37,7 +37,7 @@ const (
 )
 
 type MonkeyInfo struct {
-	worries     []int
+	worries     []int64
 	operation   int
 	operand     string
 	testValue   int
@@ -46,13 +46,15 @@ type MonkeyInfo struct {
 	activity    int
 }
 
-func getWorry(info string) []int {
+func getWorry(info string) []int64 {
 	info = strings.TrimPrefix(info, "  Starting items: ")
 	worryStrings := strings.Split(info, ", ")
-	worries := make([]int, len(worryStrings))
+	worries := make([]int64, len(worryStrings))
 	for i, w := range worryStrings {
-		worries[i], _ = strconv.Atoi(w)
+		value, _ := strconv.Atoi(w)
+		worries[i] = int64(value)
 	}
+
 	return worries
 }
 
@@ -90,6 +92,7 @@ func getFalseMonkey(info string) int {
 
 func getMonkeyInfo(info []string) MonkeyInfo {
 	var monkeyInfo MonkeyInfo
+
 	monkeyInfo.worries = getWorry(info[1])
 	monkeyInfo.operation, monkeyInfo.operand = getOperation(info[2])
 	monkeyInfo.testValue = getTest(info[3])
@@ -99,28 +102,32 @@ func getMonkeyInfo(info []string) MonkeyInfo {
 	return monkeyInfo
 }
 
-func newWorryValue(worry int, monkey MonkeyInfo) int {
-	operandValue := 0
+func newWorryValue(worry int64, monkey MonkeyInfo) int64 {
+	var operandValue int64
 	if monkey.operand == "old" {
 		operandValue = worry
 	} else {
-		operandValue, _ = strconv.Atoi(monkey.operand)
+		ov, _ := strconv.Atoi(monkey.operand)
+		operandValue = int64(ov)
 	}
 	switch monkey.operation {
 	case add:
-		return worry + operandValue
+		z := worry + operandValue
+		return z
 	case multiply:
-		return worry * operandValue
+		z := worry * operandValue
+		return z
 	}
 	return worry
 }
 
-func doRound(monkeys []MonkeyInfo) []MonkeyInfo {
+func doRound(monkeys []MonkeyInfo, worryFactor int64, worryLimit int64) []MonkeyInfo {
 	for i := 0; i < len(monkeys); i++ {
 		for _, worry := range monkeys[i].worries {
-			newWorry := newWorryValue(worry, monkeys[i]) / 3
+			newWorry := (newWorryValue(worry, monkeys[i]) / worryFactor) % worryLimit
 			newMonkey := monkeys[i].falseMonkey
-			if newWorry%monkeys[i].testValue == 0 {
+			testResult := newWorry % int64(monkeys[i].testValue)
+			if testResult == 0 {
 				newMonkey = monkeys[i].trueMonkey
 			}
 			monkeys[newMonkey].worries = append(monkeys[newMonkey].worries, newWorry)
@@ -134,20 +141,38 @@ func doRound(monkeys []MonkeyInfo) []MonkeyInfo {
 func run(input string) {
 	monkeyInfo := strings.Split(input, "\n\n")
 	monkeys := make([]MonkeyInfo, len(monkeyInfo))
+	var worryLimit int64
+	worryLimit = 1
 	for i, mi := range monkeyInfo {
 		monkeys[i] = getMonkeyInfo(strings.Split(mi, "\n"))
+		worryLimit = worryLimit * int64(monkeys[i].testValue)
 	}
 
 	for r := 0; r < 20; r++ {
-		fmt.Println(monkeys)
-		fmt.Println()
-		monkeys = doRound(monkeys)
+		monkeys = doRound(monkeys, 3, worryLimit)
 	}
-	fmt.Println(monkeys)
 
 	sort.Slice(monkeys, func(i, j int) bool {
 		return monkeys[i].activity > monkeys[j].activity
 	})
 
 	fmt.Println(monkeys[0].activity * monkeys[1].activity)
+
+	monkeys = make([]MonkeyInfo, len(monkeyInfo))
+	worryLimit = 1
+	for i, mi := range monkeyInfo {
+		monkeys[i] = getMonkeyInfo(strings.Split(mi, "\n"))
+		worryLimit = worryLimit * int64(monkeys[i].testValue)
+	}
+
+	for r := 0; r < 10000; r++ {
+		monkeys = doRound(monkeys, 1, worryLimit)
+	}
+
+	sort.Slice(monkeys, func(i, j int) bool {
+		return monkeys[i].activity > monkeys[j].activity
+	})
+
+	fmt.Println(monkeys[0].activity * monkeys[1].activity)
+
 }

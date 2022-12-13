@@ -63,7 +63,13 @@ func splitList(list string) []string {
 }
 
 func isPairCorrect(list1 string, list2 string) int {
-	if list1[0] == '[' && list2[0] == '[' {
+	if list1[0] == '[' || list2[0] == '[' {
+		if list1[0] != '[' {
+			list1 = "[" + list1 + "]"
+		}
+		if list2[0] != '[' {
+			list2 = "[" + list2 + "]"
+		}
 		items1 := splitList(list1[1 : len(list1)-1])
 		items2 := splitList(list2[1 : len(list2)-1])
 		for i, j := 0, 0; i < len(items1) && j < len(items2); i, j = i+1, j+1 {
@@ -83,14 +89,6 @@ func isPairCorrect(list1 string, list2 string) int {
 		} else {
 			return 0
 		}
-	} else if list1[0] == '[' || list2[0] == '[' {
-		if list1[0] != '[' {
-			list1 = "[" + list1 + "]"
-		}
-		if list2[0] != '[' {
-			list2 = "[" + list2 + "]"
-		}
-		return isPairCorrect(list1, list2)
 	} else {
 		val1, _ := strconv.Atoi(list1)
 		val2, _ := strconv.Atoi(list2)
@@ -102,7 +100,6 @@ func isPairCorrect(list1 string, list2 string) int {
 			return 0
 		}
 	}
-	return 0
 }
 
 // func listValue(list string) int {
@@ -137,7 +134,6 @@ func run(input string) {
 	sort.Slice(packets, func(i, j int) bool {
 		return isPairCorrect(packets[i], packets[j]) == 1
 	})
-	fmt.Println(packets)
 	v1, v2 := 0, 0
 	for i, p := range packets {
 		if p == "[[2]]" {
@@ -147,5 +143,5 @@ func run(input string) {
 			v2 = i + 1
 		}
 	}
-	fmt.Printf("%d * %d = %d\n", v1, v2, v1*v2)
+	fmt.Printf("Decoder key = %d * %d = %d\n", v1, v2, v1*v2)
 }

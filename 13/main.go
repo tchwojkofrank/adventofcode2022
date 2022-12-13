@@ -48,6 +48,8 @@ func splitList(list string) []string {
 			}
 			endIndex := i
 			items = append(items, list[startIndex:endIndex])
+		case ',':
+			i++
 		default:
 			startIndex := i
 			for i = i + 1; i < len(list) && list[i] != ','; i++ {
@@ -102,17 +104,17 @@ func isPairCorrect(list1 string, list2 string) int {
 	return 0
 }
 
-func listValue(list string) int {
-	list = strings.ReplaceAll(list, "[", "")
-	list = strings.ReplaceAll(list, "]", "")
-	items := strings.Split(list, ",")
-	sum := 0
-	for _, i := range items {
-		value, _ := strconv.Atoi(i)
-		sum = sum + value
-	}
-	return sum
-}
+// func listValue(list string) int {
+// 	list = strings.ReplaceAll(list, "[", "")
+// 	list = strings.ReplaceAll(list, "]", "")
+// 	items := strings.Split(list, ",")
+// 	sum := 0
+// 	for _, i := range items {
+// 		value, _ := strconv.Atoi(i)
+// 		sum = sum + value
+// 	}
+// 	return sum
+// }
 
 func run(input string) {
 	pairs := strings.Split(input, "\n\n")
@@ -121,8 +123,8 @@ func run(input string) {
 	for i, pair := range pairs {
 		lists := strings.Split(pair, "\n")
 		if isPairCorrect(lists[0], lists[1]) == 1 {
-			correctLists = append(correctLists, i)
-			sum = sum + i
+			correctLists = append(correctLists, i+1)
+			sum = sum + i + 1
 		}
 	}
 	fmt.Printf("Correct lists: %v\n\n", correctLists)

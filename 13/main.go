@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -120,8 +121,10 @@ func run(input string) {
 	pairs := strings.Split(input, "\n\n")
 	correctLists := make([]int, 0)
 	sum := 0
+	packets := make([]string, 0)
 	for i, pair := range pairs {
 		lists := strings.Split(pair, "\n")
+		packets = append(packets, lists...)
 		if isPairCorrect(lists[0], lists[1]) == 1 {
 			correctLists = append(correctLists, i+1)
 			sum = sum + i + 1
@@ -129,4 +132,20 @@ func run(input string) {
 	}
 	fmt.Printf("Correct lists: %v\n\n", correctLists)
 	fmt.Printf("Correct sum: %v\n\n", sum)
+
+	packets = append(packets, "[[2]]", "[[6]]")
+	sort.Slice(packets, func(i, j int) bool {
+		return isPairCorrect(packets[i], packets[j]) == 1
+	})
+	fmt.Println(packets)
+	v1, v2 := 0, 0
+	for i, p := range packets {
+		if p == "[[2]]" {
+			v1 = i + 1
+		}
+		if p == "[[6]]" {
+			v2 = i + 1
+		}
+	}
+	fmt.Printf("%d * %d = %d\n", v1, v2, v1*v2)
 }

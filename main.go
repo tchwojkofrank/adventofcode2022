@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 func readInput(fname string) string {
@@ -25,8 +26,11 @@ func main() {
 	}
 	params := os.Args[1]
 	inputName := strings.Split(params, " ")[0]
+	start := time.Now()
 	text := readInput(inputName)
 	run(text)
+	end := time.Now()
+	fmt.Printf("Running time: %v\n", end.Sub(start))
 }
 
 func run(input string) {

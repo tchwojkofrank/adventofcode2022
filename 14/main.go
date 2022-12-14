@@ -173,8 +173,6 @@ func run(input string) {
 	mapCheck = mapCheck1
 	rockPaths := strings.Split(input, "\n")
 	rockMap, minPt, maxPt := newRockMap(rockPaths)
-	fmt.Print(toString(rockMap, minPt, maxPt))
-	fmt.Printf("Box: %v, %v\n", minPt, maxPt)
 	abyss := false
 	count := 0
 	for !abyss {
@@ -182,9 +180,9 @@ func run(input string) {
 		if !abyss {
 			count++
 		}
-		fmt.Print(toString(rockMap, minPt, maxPt))
-		fmt.Println(count)
 	}
+	fmt.Print(toString(rockMap, minPt, maxPt))
+	fmt.Printf("Part 1 count = %v\n", count)
 
 	//part 2
 	mapCheck = mapCheck2
@@ -196,8 +194,6 @@ func run(input string) {
 	if maxPt.x < 500+maxPt.y+3 {
 		maxPt.x = 500 + maxPt.y + 3
 	}
-	fmt.Print(toString(rockMap, minPt, maxPt))
-	fmt.Printf("Box: %v, %v\n", minPt, maxPt)
 	abyss = false
 	count = 0
 	for !abyss {

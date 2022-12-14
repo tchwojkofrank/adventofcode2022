@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 )
@@ -26,6 +27,14 @@ func main() {
 	}
 	params := os.Args[1]
 	inputName := strings.Split(params, " ")[0]
+	if len(args) >= 3 {
+		f, err := os.Create(os.Args[2])
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 	text := readInput(inputName)
 	run(text)
 }
@@ -35,7 +44,12 @@ type Pt struct {
 	y int
 }
 
-type RockMap map[Pt]rune
+type RockMap struct {
+	rm       map[Pt]rune
+	min      Pt
+	max      Pt
+	lastPath []Pt
+}
 
 func newPt(point string) Pt {
 	var pt Pt
@@ -54,14 +68,14 @@ func sign(x int) int {
 	return 0
 }
 
-func toString(rockMap RockMap, min Pt, max Pt) string {
+func (rm RockMap) String() string {
 	result := ""
-	for y := min.y; y <= max.y; y++ {
+	for y := rm.min.y; y <= rm.max.y; y++ {
 		line := ""
-		for x := min.x; x <= max.x; x++ {
+		for x := rm.min.x; x <= rm.max.x; x++ {
 			if x == 500 && y == 0 {
 				line = line + "+"
-			} else if r, ok := rockMap[Pt{x, y}]; ok {
+			} else if r, ok := rm.rm[Pt{x, y}]; ok {
 				line = line + string(r)
 			} else {
 				line = line + "."
@@ -76,28 +90,39 @@ func (rockMap RockMap) addLine(start Pt, end Pt) {
 	dx := sign(end.x - start.x)
 	dy := sign(end.y - start.y)
 	for x, y := start.x, start.y; x != end.x || y != end.y; x, y = x+dx, y+dy {
-		rockMap[Pt{x, y}] = '#'
+		rockMap.rm[Pt{x, y}] = '#'
 	}
-	rockMap[end] = '#'
+	rockMap.rm[end] = '#'
 }
 
-func (rockMap RockMap) dropSand(minPt Pt, maxPt Pt) bool {
-	ok := true
-	from := Pt{500, 0}
+func (rockMap *RockMap) dropSand() bool {
+	minPt := rockMap.min
+	maxPt := rockMap.max
 	abyss := false
+
+	var from Pt
+
+	if len(rockMap.lastPath) > 0 {
+		from = rockMap.lastPath[len(rockMap.lastPath)-2]
+		rockMap.lastPath = rockMap.lastPath[:len(rockMap.lastPath)-1]
+	} else {
+		from = Pt{500, 0}
+		rockMap.lastPath = append(rockMap.lastPath, from)
+	}
+	ok := true
 	for ok {
 		if !(from.x >= minPt.x && from.y >= minPt.y && from.x <= maxPt.x && from.y <= maxPt.y) {
 			ok = false
 			abyss = true
 			continue
 		}
-		// cf, dir := rockMap.canFall(from)
-		cf, dir := mapCheck(rockMap, from, minPt, maxPt)
+		cf, dir := mapCheck(*rockMap, from)
 		if cf {
 			from = Pt{from.x + dir.x, from.y + dir.y}
+			rockMap.lastPath = append(rockMap.lastPath, from)
 		} else {
 			ok = false
-			rockMap[from] = 'o'
+			rockMap.rm[from] = 'o'
 			if from.x == 500 && from.y == 0 {
 				abyss = true
 			}
@@ -106,64 +131,66 @@ func (rockMap RockMap) dropSand(minPt Pt, maxPt Pt) bool {
 	return abyss
 }
 
-func newRockMap(rockPaths []string) (RockMap, Pt, Pt) {
-	maxPt := Pt{500, 0}
-	minPt := Pt{500, 0}
-	rockMap := RockMap(make(map[Pt]rune))
+func newRockMap(rockPaths []string) RockMap {
+	var rockMap RockMap
+	rockMap.rm = make(map[Pt]rune)
+	rockMap.max = Pt{500, 0}
+	rockMap.min = Pt{500, 0}
 	for _, rockPath := range rockPaths {
 		rockPoints := strings.Split(rockPath, " -> ")
 		for i := 0; i < len(rockPoints)-1; i++ {
 			start := newPt(rockPoints[i])
 			end := newPt(rockPoints[i+1])
-			if start.x < minPt.x {
-				minPt.x = start.x
+			if start.x < rockMap.min.x {
+				rockMap.min.x = start.x
 			}
-			if end.x < minPt.x {
-				minPt.x = end.x
+			if end.x < rockMap.min.x {
+				rockMap.min.x = end.x
 			}
-			if start.y < minPt.y {
-				minPt.y = start.y
+			if start.y < rockMap.min.y {
+				rockMap.min.y = start.y
 			}
-			if end.y < minPt.y {
-				minPt.y = end.y
+			if end.y < rockMap.min.y {
+				rockMap.min.y = end.y
 			}
-			if start.x > maxPt.x {
-				maxPt.x = start.x
+			if start.x > rockMap.max.x {
+				rockMap.max.x = start.x
 			}
-			if end.x > maxPt.x {
-				maxPt.x = end.x
+			if end.x > rockMap.max.x {
+				rockMap.max.x = end.x
 			}
-			if start.y > maxPt.y {
-				maxPt.y = start.y
+			if start.y > rockMap.max.y {
+				rockMap.max.y = start.y
 			}
-			if end.y > maxPt.y {
-				maxPt.y = end.y
+			if end.y > rockMap.max.y {
+				rockMap.max.y = end.y
 			}
 			rockMap.addLine(newPt(rockPoints[i]), newPt(rockPoints[i+1]))
 		}
 	}
-	return rockMap, minPt, maxPt
+	rockMap.lastPath = make([]Pt, 0)
+	return rockMap
 }
 
-var mapCheck func(RockMap, Pt, Pt, Pt) (bool, Pt)
+var mapCheck func(RockMap, Pt) (bool, Pt)
 
-func mapCheck1(rockMap RockMap, pt Pt, min Pt, max Pt) (bool, Pt) {
+func mapCheck1(rockMap RockMap, pt Pt) (bool, Pt) {
 	return rockMap.canFall(pt)
 }
 
-func mapCheck2(rockMap RockMap, pt Pt, min Pt, max Pt) (bool, Pt) {
-	if pt.y == max.y-1 {
+func mapCheck2(rockMap RockMap, pt Pt) (bool, Pt) {
+	if pt.y == rockMap.max.y-1 {
 		return false, Pt{0, 0}
 	}
-	return mapCheck1(rockMap, pt, min, max)
+	return mapCheck1(rockMap, pt)
 }
 
 func (rockMap RockMap) canFall(from Pt) (bool, Pt) {
-	if _, ok := rockMap[Pt{from.x, from.y + 1}]; !ok {
+	if _, ok := rockMap.rm[Pt{from.x, from.y + 1}]; !ok {
 		return true, Pt{0, 1}
-	} else if _, ok := rockMap[Pt{from.x - 1, from.y + 1}]; !ok {
+	} else if _, ok := rockMap.rm[Pt{from.x - 1, from.y + 1}]; !ok {
 		return true, Pt{-1, 1}
-	} else if _, ok := rockMap[Pt{from.x + 1, from.y + 1}]; !ok {
+	} else if _, ok := rockMap.rm[Pt{from.x + 1, from.y + 1}]; !ok {
 		return true, Pt{1, 1}
 	}
 	return false, Pt{0, 0}
@@ -172,35 +199,33 @@ func (rockMap RockMap) canFall(from Pt) (bool, Pt) {
 func run(input string) {
 	mapCheck = mapCheck1
 	rockPaths := strings.Split(input, "\n")
-	rockMap, minPt, maxPt := newRockMap(rockPaths)
+	rockMap := newRockMap(rockPaths)
 	abyss := false
 	count := 0
 	for !abyss {
-		abyss = rockMap.dropSand(minPt, maxPt)
+		abyss = rockMap.dropSand()
 		if !abyss {
 			count++
 		}
 	}
-	fmt.Print(toString(rockMap, minPt, maxPt))
 	fmt.Printf("Part 1 count = %v\n", count)
 
 	//part 2
 	mapCheck = mapCheck2
-	rockMap, minPt, maxPt = newRockMap(rockPaths)
-	maxPt.y += 2
-	if minPt.x > 500-maxPt.y-3 {
-		minPt.x = 500 - maxPt.y - 3
+	rockMap = newRockMap(rockPaths)
+	rockMap.max.y += 2
+	if rockMap.min.x > 500-rockMap.max.y-3 {
+		rockMap.min.x = 500 - rockMap.max.y - 3
 	}
-	if maxPt.x < 500+maxPt.y+3 {
-		maxPt.x = 500 + maxPt.y + 3
+	if rockMap.max.x < 500+rockMap.max.y+3 {
+		rockMap.max.x = 500 + rockMap.max.y + 3
 	}
 	abyss = false
 	count = 0
 	for !abyss {
-		abyss = rockMap.dropSand(minPt, maxPt)
+		abyss = rockMap.dropSand()
 		count++
 	}
-	fmt.Print(toString(rockMap, minPt, maxPt))
 	fmt.Println(count)
 
 }

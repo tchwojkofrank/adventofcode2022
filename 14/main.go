@@ -7,6 +7,7 @@ import (
 	"runtime/pprof"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func readInput(fname string) string {
@@ -35,8 +36,11 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
+	start := time.Now()
 	text := readInput(inputName)
 	run(text)
+	end := time.Now()
+	fmt.Printf("Total time: %v\n", end.Sub(start))
 }
 
 type Pt struct {

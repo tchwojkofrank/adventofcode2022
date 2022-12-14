@@ -102,6 +102,9 @@ func (rockMap *RockMap) dropSand() bool {
 
 	var from Pt
 
+	// We don't have to check from the beginning every time.
+	// We can use the previous path the sand took to figure out where the next one lands.
+	// This resulted in taking 1/10th the time as without this optimization.
 	if len(rockMap.lastPath) > 0 {
 		from = rockMap.lastPath[len(rockMap.lastPath)-2]
 		rockMap.lastPath = rockMap.lastPath[:len(rockMap.lastPath)-1]

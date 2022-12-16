@@ -95,32 +95,40 @@ func pointInSensorRange(sensor Sensor, pt Pt) bool {
 	return distance(sensor.location, pt) <= sensor.radius
 }
 
-func isBeacon(beacons []Pt, pt Pt) bool {
-	for _, b := range beacons {
-		if b == pt {
-			return true
-		}
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
-	return false
+	return b
 }
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+var check int
+var limit int
 
 func run(input string) {
 	readings := strings.Split(input, "\n")
 	sensors, min, max := getSensors(readings)
 
-	check := 0
-
 	switch os.Args[1] {
 	case "test":
 		check = 10
+		limit = 20
 	case "input":
 		check = 2000000
+		limit = 4000000
 	}
 
-	beacons := make([]Pt, 0)
+	beacons := make(map[Pt]struct{}, 0)
 	for _, s := range sensors {
 		if s.nearestBeacon.y == check {
-			beacons = append(beacons, s.nearestBeacon)
+			beacons[s.nearestBeacon] = struct{}{}
 		}
 	}
 
@@ -130,7 +138,7 @@ func run(input string) {
 		foundSensor := false
 		for i := 0; i < len(sensors) && !foundSensor; i++ {
 			if pointInSensorRange(sensors[i], pt) {
-				if !isBeacon(beacons, pt) {
+				if _, ok := beacons[pt]; !ok {
 					count++
 					foundSensor = true
 				}
@@ -138,4 +146,66 @@ func run(input string) {
 		}
 	}
 	fmt.Printf("Total points in range of sensor at y=%d is %d\n", check, count)
+
+	// part 2
+
+	for y := 0; y <= limit; y++ {
+		intervalslice := Intervals(make([]Pt, 0))
+		intervals := &intervalslice
+		for _, s := range sensors {
+			intervals.addSensorInfo(s, y)
+		}
+		if len(*intervals) > 1 {
+			fmt.Printf("Intervals on line %d\n%v\n", y, *intervals)
+			x := (*intervals)[0].y + 1
+			frequency := limit*x + y
+			fmt.Printf("tuning frequency = %d\n", frequency)
+			break
+		}
+	}
+}
+
+type Intervals []Pt
+
+func (intervals *Intervals) addInterval(interval Pt) {
+
+	// first interval whose max >= this interval's min
+	first := 0
+	for ; first < len(*intervals) && (*intervals)[first].y < interval.x; first++ {
+	}
+	if first >= len(*intervals) {
+		*intervals = append(*intervals, interval)
+		return
+	}
+
+	// last interval whose min >= this interval's max
+	last := first
+	for ; last < len(*intervals) && (*intervals)[last].x <= interval.y; last++ {
+	}
+
+	// no overlaps
+	if first == last {
+		// insert the interval before first
+
+		*intervals = append((*intervals)[:first+1], (*intervals)[first:]...)
+		(*intervals)[first] = interval
+		return
+	}
+
+	// overlaps from first to last-1
+	// create a new interval, first -> interval, delete from first +1 to last-1
+	newInterval := Pt{min((*intervals)[first].x, interval.x), max((*intervals)[last-1].y, interval.y)}
+	(*intervals)[first] = newInterval
+	*intervals = append((*intervals)[:first+1], (*intervals)[last:]...)
+}
+
+func (intervals *Intervals) addSensorInfo(s Sensor, y int) {
+	minY := s.location.y - s.radius
+	maxY := s.location.y + s.radius
+	if y >= minY && y <= maxY {
+		dy := abs(y - s.location.y)
+		dx := abs(s.radius - dy)
+		interval := Pt{max(0, s.location.x-dx), min(limit, s.location.x+dx)}
+		intervals.addInterval(interval)
+	}
 }

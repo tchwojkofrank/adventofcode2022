@@ -81,6 +81,14 @@ func isCollision(rockMap *RockMap, shape []Pt, offset Pt) bool {
 	return false
 }
 
+func cleanMap(rockMap *RockMap) {
+	for k, _ := range rockMap.rocks {
+		if k.y > -rockMap.height+100 {
+			delete(rockMap.rocks, k)
+		}
+	}
+}
+
 func dropRock(rockMap *RockMap, shapes *Shapes, jets *Jets) {
 	offset := Pt{2, -rockMap.height - 3 - shapeHeight[shapes.index]}
 	collision := false
@@ -106,6 +114,7 @@ func dropRock(rockMap *RockMap, shapes *Shapes, jets *Jets) {
 		}
 	}
 	shapes.index = (shapes.index + 1) % len(shapes.shapes)
+	cleanMap(rockMap)
 }
 
 func (rm RockMap) String() string {
@@ -144,7 +153,10 @@ func run(input string) {
 		rockMap.rocks[Pt{i, 0}] = struct{}{}
 		rockMap.height = 0
 	}
-	for i := 0; i < 2022; i++ {
+	for i := int64(0); i < 1000000000; i++ {
+		if i%1000000 == 0 {
+			fmt.Printf("%d %d\n", i/1000000, len(rockMap.rocks))
+		}
 		dropRock(&rockMap, &shapes, &jets)
 	}
 	fmt.Printf("Height = %v\n", rockMap.height)

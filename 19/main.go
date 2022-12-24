@@ -93,34 +93,54 @@ func canBuildGeodeRobotInTime(bp Blueprint, inv Inventory, timeLeft int) bool {
 	}
 	oreRate := inv.oreRobot
 	obsidianRate := inv.obsidianRobot
-	oreNeed := bp.geodeRobot[0]
-	obsidianNeed := bp.geodeRobot[1]
+	oreNeed := bp.geodeRobot[0] - inv.ore
+	obsidianNeed := bp.geodeRobot[1] - inv.obisidian
 	if (timeLeft-1)*obsidianRate >= obsidianNeed && (timeLeft-1)*oreRate >= oreNeed {
 		return true
 	}
 	// time to build obsidianRobot?
 	if (timeLeft-1)*obsidianRate < obsidianNeed {
 		clayRate := inv.clayRobot
-		if clayRate < 1 {
+		if clayRate < 1 && timeLeft >= 21 {
 			// too early, we need to build a clay robot
 			return true
 		}
 		oreNeed = bp.obsidianRobot[0]
 		clayNeed := bp.obsidianRobot[1]
-		timeToObsidian := max(clayNeed/clayRate, oreNeed/oreRate)
-		timeLeftAfterBuild := timeLeft - timeToObsidian
-		obsidianRate = inv.obsidianRobot + 1
-		if (timeLeftAfterBuild-1)*obsidianRate >= obsidianNeed {
-			return true
+		var timeToObsidian int
+		if clayRate > 0 && oreRate > 0 {
+			timeToObsidian = max(clayNeed/clayRate, oreNeed/oreRate)
+			timeLeftAfterBuild := timeLeft - timeToObsidian
+			obsidianRate = inv.obsidianRobot + 1
+			if (timeLeftAfterBuild-1)*obsidianRate >= obsidianNeed {
+				return true
+			}
 		}
 		// time to build clayRobot?
-		oreNeed = bp.clayRobot
-		timeToClay := oreNeed / oreRate
-		timeLeftAfterOreBuild := timeLeft - timeToClay
-		oreRate = inv.oreRobot + 1
-		timeToObsidian = max(clayNeed/clayRate, oreNeed/oreRate)
-		if (timeLeftAfterOreBuild-timeToObsidian-1)*(obsidianRate+1) >= obsidianNeed {
+		if timeLeft >= 10 {
 			return true
+		}
+
+		timeToClayRobot := make([]int, 3)
+		timeToFinishOreRobots := make([]int, 3)
+		// build 0 to 2 ore robots
+		for i := 0; i < 3; i++ {
+			if i == 0 {
+				timeToFinishOreRobots[i] = 0
+			} else {
+				timeToFinishOreRobots[i] = bp.oreRobot/(oreRate+i-1) + timeToFinishOreRobots[i-1]
+			}
+			oreUsed := i * bp.oreRobot
+			oreMade := inv.oreRobot * timeToFinishOreRobots[i]
+			if i == 2 {
+				oreMade += timeToFinishOreRobots[i] - timeToFinishOreRobots[i-1]
+			}
+			timeToClayRobot[i] = (bp.clayRobot - inv.ore + oreUsed - oreMade) / (oreRate + i)
+			oreUsed += bp.clayRobot
+			timeToBuildObsidianRobot := max(bp.obsidianRobot[0]-inv.ore+oreUsed-oreMade/(oreRate+i), (bp.obsidianRobot[1]-inv.clay)/(inv.clayRobot+1))
+			if timeToClayRobot[i]+timeToBuildObsidianRobot+timeToFinishOreRobots[i] <= timeLeft-1 {
+				return true
+			}
 		}
 	}
 
@@ -152,12 +172,12 @@ func runBlueprint(bp Blueprint, inventory Inventory, timeLeft int, actionList st
 	newinventory.geode += inventory.geodeRobot
 	if newinventory.geode > 0 && timeLeft > earliestGeode {
 		earliestGeode = timeLeft
+	} else if timeLeft <= earliestGeode-2 && newinventory.geode == 0 {
+		return inventory, actionList
 	}
 
-	// try not building anything this time
-	noBuild, noBuildActionList := runBlueprint(bp, newinventory, timeLeft-1, actionList+"no build\n")
-	bestInventory := noBuild
-	bestAction := noBuildActionList
+	bestInventory := inventory
+	bestAction := actionList
 
 	if inventory.ore >= bp.geodeRobot[0] && inventory.obisidian >= bp.geodeRobot[1] {
 		geodeInventory := newinventory
@@ -170,9 +190,7 @@ func runBlueprint(bp Blueprint, inventory Inventory, timeLeft int, actionList st
 			bestInventory = geodeInventory
 			bestAction = geodeActionList
 		}
-	}
-
-	if inventory.ore >= bp.obsidianRobot[0] && inventory.clay >= bp.obsidianRobot[1] {
+	} else if inventory.ore >= bp.obsidianRobot[0] && inventory.clay >= bp.obsidianRobot[1] {
 		obsidianInventory := newinventory
 		var obsidianActionList string
 		obsidianInventory.ore -= bp.obsidianRobot[0]
@@ -183,29 +201,36 @@ func runBlueprint(bp Blueprint, inventory Inventory, timeLeft int, actionList st
 			bestInventory = obsidianInventory
 			bestAction = obsidianActionList
 		}
-	}
-
-	if inventory.ore >= bp.clayRobot {
-		clayInventory := newinventory
-		var clayActionList string
-		clayInventory.ore -= bp.clayRobot
-		clayInventory.clayRobot++
-		clayInventory, clayActionList = runBlueprint(bp, clayInventory, timeLeft-1, actionList+"build clay robot\n")
-		if clayInventory.geode > bestInventory.geode {
-			bestInventory = clayInventory
-			bestAction = clayActionList
+	} else {
+		if inventory.ore >= bp.clayRobot {
+			clayInventory := newinventory
+			var clayActionList string
+			clayInventory.ore -= bp.clayRobot
+			clayInventory.clayRobot++
+			clayInventory, clayActionList = runBlueprint(bp, clayInventory, timeLeft-1, actionList+"build clay robot\n")
+			if clayInventory.geode > bestInventory.geode {
+				bestInventory = clayInventory
+				bestAction = clayActionList
+			}
 		}
-	}
 
-	if inventory.ore >= bp.oreRobot {
-		oreInventory := newinventory
-		var oreActionList string
-		oreInventory.ore -= bp.oreRobot
-		oreInventory.oreRobot++
-		oreInventory, oreActionList = runBlueprint(bp, oreInventory, timeLeft-1, actionList+"build ore robot\n")
-		if oreInventory.geode > bestInventory.geode {
-			bestInventory = oreInventory
-			bestAction = oreActionList
+		if inventory.ore >= bp.oreRobot {
+			oreInventory := newinventory
+			var oreActionList string
+			oreInventory.ore -= bp.oreRobot
+			oreInventory.oreRobot++
+			oreInventory, oreActionList = runBlueprint(bp, oreInventory, timeLeft-1, actionList+"build ore robot\n")
+			if oreInventory.geode > bestInventory.geode {
+				bestInventory = oreInventory
+				bestAction = oreActionList
+			}
+		}
+
+		// try not building anything this time
+		noBuildInventory, noBuildActionList := runBlueprint(bp, newinventory, timeLeft-1, actionList+"no build\n")
+		if noBuildInventory.geode > bestInventory.geode {
+			bestInventory = noBuildInventory
+			bestAction = noBuildActionList
 		}
 	}
 
@@ -214,7 +239,8 @@ func runBlueprint(bp Blueprint, inventory Inventory, timeLeft int, actionList st
 
 func run(input string) {
 	blueprints := strings.Split(input, "\n")
-	for _, b := range blueprints {
+	qualitySum := 0
+	for i, b := range blueprints {
 		blueprint := newBlueprint(b)
 		fmt.Println(blueprint)
 		var inventory Inventory
@@ -225,6 +251,8 @@ func run(input string) {
 		fmt.Printf("Blueprint %d Inventory: %v\n", blueprint.index, result)
 		fmt.Printf("Best set of actions:\n%v\n", actionList)
 		fmt.Printf("Earliest geode robot %d\n", earliestGeode)
+		fmt.Printf("Quality number for blueprint %d is %d\n", i+1, (i+1)*result.geode)
+		qualitySum += (i + 1) * result.geode
 	}
-
+	fmt.Printf("\nQuality total:\n%d\n", qualitySum)
 }

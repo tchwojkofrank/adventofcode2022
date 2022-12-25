@@ -101,7 +101,7 @@ func makeLists(numbers []int) OrderList {
 
 func mix(orderList *OrderList) {
 	length := len(orderList.order)
-	fmt.Println((*ListItem)(orderList.list))
+	// fmt.Println((*ListItem)(orderList.list))
 	for i := 0; i < length; i++ {
 		item := orderList.order[i].item
 		listItem := item.list
@@ -129,7 +129,7 @@ func mix(orderList *OrderList) {
 			listItem.next.prev = listItem
 			listItem.prev.next = listItem
 		}
-		fmt.Println((*ListItem)(orderList.list))
+		// fmt.Println((*ListItem)(orderList.list))
 	}
 }
 

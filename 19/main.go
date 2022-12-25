@@ -105,8 +105,11 @@ func canBuildGeodeRobotInTime(bp Blueprint, inv Inventory, timeLeft int) bool {
 			// too early, we need to build a clay robot
 			return true
 		}
-		oreNeed = bp.obsidianRobot[0]
-		clayNeed := bp.obsidianRobot[1]
+		oreNeed = bp.obsidianRobot[0] - inv.ore
+		clayNeed := bp.obsidianRobot[1] - inv.clay
+		if oreNeed <= 0 && clayNeed <= 0 {
+			return true
+		}
 		var timeToObsidian int
 		if clayRate > 0 && oreRate > 0 {
 			timeToObsidian = max(clayNeed/clayRate, oreNeed/oreRate)
@@ -117,7 +120,7 @@ func canBuildGeodeRobotInTime(bp Blueprint, inv Inventory, timeLeft int) bool {
 			}
 		}
 		// time to build clayRobot?
-		if timeLeft >= 10 {
+		if timeLeft >= 12 {
 			return true
 		}
 
@@ -144,23 +147,23 @@ func canBuildGeodeRobotInTime(bp Blueprint, inv Inventory, timeLeft int) bool {
 		}
 	}
 
-	return false
+	return true
 }
 
 var attempt int = 0
 
 func runBlueprint(bp Blueprint, inventory Inventory, timeLeft int, actionList string) (Inventory, string) {
 	if timeLeft == 0 {
-		if attempt%1000000000 == 0 {
-			// fmt.Printf("attempt %d best %d\n%v\n", attempt, earliestGeode, actionList)
+		if attempt%1000000 == 0 {
+			fmt.Printf("attempt %d best %d\n%v\n", attempt, earliestGeode, actionList)
 		}
 		attempt++
 		return inventory, actionList
 	}
 	// check if it's possible to build a geode robot in time
 	if !canBuildGeodeRobotInTime(bp, inventory, timeLeft) {
-		if attempt%1000000000 == 0 {
-			// fmt.Printf("attempt %d best %d\n%v\n", attempt, earliestGeode, actionList)
+		if attempt%1000000 == 0 {
+			fmt.Printf("attempt %d best %d\n%v\n", attempt, earliestGeode, actionList)
 		}
 		attempt++
 		return inventory, actionList

@@ -69,12 +69,17 @@ func getNumbers(input string) []int {
 	return numbers
 }
 
+var zero *Item
+
 // the first return is the original
 func makeLists(numbers []int) OrderList {
 	order := make([]OrderItem, len(numbers))
 	var list List
 	for i, n := range numbers {
 		item := Item{value: n}
+		if item.value == 0 {
+			zero = &item
+		}
 		order[i] = OrderItem{item: &item, index: i}
 		listItem := ListItem{item: &item}
 		if i == 0 {
@@ -96,20 +101,35 @@ func makeLists(numbers []int) OrderList {
 
 func mix(orderList *OrderList) {
 	length := len(orderList.order)
+	fmt.Println((*ListItem)(orderList.list))
 	for i := 0; i < length; i++ {
 		item := orderList.order[i].item
 		listItem := item.list
-		moveCount := item.value & length
-		listItem.prev.next = listItem.next
-		listItem.next.prev = listItem.prev
-		currentListItem := listItem.prev
-		for j := 0; j < moveCount; j, currentListItem = j+1, currentListItem.next {
+		moveCount := item.value % length
+		if moveCount > 0 {
+			listItem.prev.next = listItem.next
+			listItem.next.prev = listItem.prev
+			currentListItem := listItem.prev
+			for j := 0; j < moveCount; j, currentListItem = j+1, currentListItem.next {
 
+			}
+			listItem.prev = currentListItem
+			listItem.next = currentListItem.next
+			listItem.prev.next = listItem
+			listItem.next.prev = listItem
+		} else if moveCount < 0 {
+			listItem.prev.next = listItem.next
+			listItem.next.prev = listItem.prev
+			currentListItem := listItem.next
+			for j := 0; j < -moveCount; j, currentListItem = j+1, currentListItem.prev {
+
+			}
+			listItem.next = currentListItem
+			listItem.prev = currentListItem.prev
+			listItem.next.prev = listItem
+			listItem.prev.next = listItem
 		}
-		listItem.prev = currentListItem
-		listItem.next = currentListItem.next
-		listItem.prev.next = listItem
-		listItem.next.prev = listItem
+		fmt.Println((*ListItem)(orderList.list))
 	}
 }
 
@@ -121,6 +141,18 @@ func max(a, b, c int) int {
 	}
 	return c
 }
+
+func (l *ListItem) String() string {
+	result := "[ "
+	result += fmt.Sprintf("%d ", (*l).item.value)
+	for current := l.next; current != l; current = current.next {
+		result += fmt.Sprintf("%d ", current.item.value)
+	}
+
+	result = result + "]\n"
+	return result
+}
+
 func run(input string) {
 	numbers := getNumbers(input)
 	orderList := makeLists(numbers)
@@ -130,8 +162,8 @@ func run(input string) {
 	k2 := 2000 % length
 	k3 := 3000 % length
 	var v1, v2, v3 int
-	current := orderList.list
-	for i := 0; i < max(k1, k2, k3); i, current = i+1, current.next {
+	current := zero.list
+	for i := 0; i <= max(k1, k2, k3); i, current = i+1, current.next {
 		if i == k1 {
 			v1 = current.item.value
 		}

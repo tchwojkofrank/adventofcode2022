@@ -114,9 +114,10 @@ func getElves(input string) (Elves, Bounds) {
 	return elves, bounds
 }
 
-func doRound(elves Elves, directions []Direction) (Elves, Bounds) {
+func doRound(elves Elves, directions []Direction) (Elves, Bounds, int) {
 	targets := make(ProposedTargets)
 	destinations := make(ProposedDestinations)
+	movedCount := 0
 	for e, _ := range elves {
 		if checkDirection(elves, e, All) != 0 {
 			found := false
@@ -125,6 +126,7 @@ func doRound(elves Elves, directions []Direction) (Elves, Bounds) {
 					targets[add(e, dir.d)] = targets[add(e, dir.d)] + 1
 					destinations[e] = add(e, dir.d)
 					found = true
+					movedCount++
 					break
 				}
 			}
@@ -155,7 +157,7 @@ func doRound(elves Elves, directions []Direction) (Elves, Bounds) {
 		bounds.min = Pt{min(bounds.min.x, d.x), min(bounds.min.y, d.y)}
 		bounds.max = Pt{max(bounds.max.x, d.x), max(bounds.max.y, d.y)}
 	}
-	return newElves, bounds
+	return newElves, bounds, movedCount
 }
 
 func showElves(elves Elves, bounds Bounds) {
@@ -181,12 +183,24 @@ func run(input string) {
 	directions[1] = Direction{d: S, check: South}
 	directions[2] = Direction{d: W, check: West}
 	directions[3] = Direction{d: E, check: East}
-	for i := 0; i < 10; i++ {
-		elves, bounds = doRound(elves, directions)
+	movedCount := 0
+	i := 0
+	for ; i < 10; i++ {
+		elves, bounds, movedCount = doRound(elves, directions)
 		first := directions[0]
 		directions = append(directions[1:], first)
-		fmt.Printf("After round %d there are %d elves\n", i, len(elves))
-		showElves(elves, bounds)
+		fmt.Printf("After round %d, %d elves moved\n", i+1, movedCount)
+		// showElves(elves, bounds)
 	}
 	fmt.Printf("empty space = %d\n", boundsSize(bounds)-len(elves))
+	fmt.Printf("After round %d, %d elves moved\n", i, movedCount)
+	for ; movedCount > 0; i++ {
+		elves, bounds, movedCount = doRound(elves, directions)
+		first := directions[0]
+		directions = append(directions[1:], first)
+		fmt.Printf("After round %d, %d elves moved\n", i+1, movedCount)
+		// showElves(elves, bounds)
+	}
+	showElves(elves, bounds)
+	fmt.Printf("First round no elves moved = %v\n", i)
 }

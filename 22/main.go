@@ -28,6 +28,10 @@ func main() {
 	inputName := strings.Split(params, " ")[0]
 	start := time.Now()
 	text := readInput(inputName)
+	size = 4
+	if inputName == "input" {
+		size = 50
+	}
 	run(text)
 	end := time.Now()
 	fmt.Printf("Running time: %v\n", end.Sub(start))
@@ -275,6 +279,45 @@ func moveAll(jungle Jungle, location Location, directions string) Location {
 }
 
 var height int
+var size int
+
+// size x size square map
+type Face struct {
+	coord      Pt // {x/4, y/4}
+	jungle     map[Pt]rune
+	topFace    *Face // top edge
+	leftFace   *Face // left edge
+	bottomFace *Face // bottom edge
+	rightFace  *Face // right edge
+}
+
+type Die struct {
+	faces [6]Face
+}
+
+func sign(a int) int {
+	if a > 0 {
+		return 1
+	} else if a < 0 {
+		return -1
+	}
+	return 0
+}
+
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
+}
+
+func rotation(delta Pt) int {
+	s := -sign(delta.x * delta.y)
+	turns := (abs(delta.x+delta.y-1) % 4)
+	return s * turns
+}
+
+func cubeMove()
 
 func run(input string) {
 	inputs := strings.Split(input, "\n\n")
